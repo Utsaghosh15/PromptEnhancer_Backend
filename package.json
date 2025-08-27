@@ -1,0 +1,52 @@
+{
+  "name": "prompt-enhancer-backend",
+  "version": "1.0.0",
+  "description": "Production-ready backend for Prompt Enhancer Chrome Extension",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "worker": "node dist/workers/synopsis.worker.js",
+    "lint": "eslint src/**/*.ts",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "mongoose": "^8.0.3",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "zod": "^3.22.4",
+    "openai": "^4.20.1",
+    "bullmq": "^5.0.0",
+    "google-auth-library": "^9.4.1",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0",
+    "cookie-parser": "^1.4.6",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.10.0",
+    "@types/cookie-parser": "^1.4.6",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.2",
+    "ts-node-dev": "^2.0.0",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.8",
+    "ts-jest": "^29.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
