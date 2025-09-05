@@ -65,7 +65,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authLocalRoutes);
 app.use('/api/auth/google', authGoogleRoutes);
-app.use('/api/enhance', enhanceRoutes);
+app.use('/api', enhanceRoutes);
 app.use('/api/session', sessionRoutes);
 
 // Feedback routes (protected)

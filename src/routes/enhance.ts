@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { requireAuthOptional, anonId, limitEnhance } from '../middleware';
+import { setAnonIdCookie } from '../middleware/anonId';
 import { zodValidate, schemas } from '../middleware/zod';
 import { enhancePrompt } from '../services/openai';
 import { Session, Prompt } from '../models';
@@ -100,6 +101,11 @@ router.post('/enhance',
         latencyMs: Date.now() - startTime,
         tokens: enhancement.tokens,
       });
+
+      // Set anonymous ID cookie only if user is anonymous and this is their first usage
+      if (!userId && anonId && !req.cookies?.['pe_anon_id']) {
+        setAnonIdCookie(res, anonId);
+      }
 
       // Enqueue synopsis update if this is a follow-up
       if (isFollowUp && finalSessionId && session) {

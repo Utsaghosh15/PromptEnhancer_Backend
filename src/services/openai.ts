@@ -72,7 +72,6 @@ export async function enhancePrompt(
       messages,
       temperature: 0.1,
       max_tokens: 1000,
-      timeout: 30000, // 30 seconds
     });
 
     const enhancedPrompt = completion.choices[0]?.message?.content?.trim() || originalPrompt;
@@ -136,7 +135,6 @@ export async function updateSynopsis(
       ],
       temperature: 0.1,
       max_tokens: 500,
-      timeout: 30000,
     });
 
     const response = completion.choices[0]?.message?.content?.trim() || '';

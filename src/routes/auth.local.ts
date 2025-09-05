@@ -5,6 +5,8 @@ import { zodValidate, schemas } from '../middleware/zod';
 import { linkAnonQuota } from '../services/redis';
 import { getAnonId } from '../middleware/anonId';
 import { logger } from '../utils/logger';
+import { sendSuccess, sendError, sendConflict, sendUnauthorized } from '../utils/response';
+import { clearAnonId } from '../middleware/anonId';
 
 const router = Router();
 
@@ -21,18 +23,12 @@ router.post('/signup',
       // Check if user already exists
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-        return res.status(409).json({ error: 'User already exists' });
+        return sendConflict(res, 'User already exists');
       }
 
       // Create new user
       const user = await User.createWithPassword(email, password);
       
-      // Generate JWT token
-      const token = generateToken(user._id.toString(), user.email);
-      
-      // Set token cookie
-      setTokenCookie(res, token);
-
       // Link anonymous quota if anon cookie exists
       const anonId = getAnonId(req);
       if (anonId) {
@@ -46,18 +42,22 @@ router.post('/signup',
         }
       }
 
-      res.status(201).json({
-        message: 'User created successfully',
-        user: {
-          id: user._id,
-          email: user.email,
-          emailVerified: user.emailVerified,
+      sendSuccess(
+        res,
+        {
+          user: {
+            id: user._id,
+            email: user.email,
+            emailVerified: user.emailVerified,
+          }
         },
-        token
-      });
+        'Account created successfully! Please login to continue.',
+        201,
+        '/login'
+      );
     } catch (error) {
       logger.error('Signup error:', error);
-      res.status(500).json({ error: 'Failed to create user' });
+      sendError(res, 'Failed to create user', 500);
     }
   }
 );
@@ -75,18 +75,18 @@ router.post('/login',
       // Find user by email
       const user = await User.findOne({ email });
       if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return sendUnauthorized(res, 'Invalid credentials');
       }
 
       // Check if user has password (not OAuth-only)
       if (!user.passwordHash) {
-        return res.status(401).json({ error: 'Account created with OAuth. Please use OAuth login.' });
+        return sendUnauthorized(res, 'Account created with OAuth. Please use OAuth login.');
       }
 
       // Verify password
       const isValidPassword = await user.comparePassword(password);
       if (!isValidPassword) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return sendUnauthorized(res, 'Invalid credentials');
       }
 
       // Generate JWT token
@@ -106,20 +106,26 @@ router.post('/login',
         } catch (error) {
           logger.error('Failed to link anonymous quota:', error);
         }
+        
+        // Clear anonymous ID after linking (optional)
+        // clearAnonId(res);
       }
 
-      res.json({
-        message: 'Login successful',
-        user: {
-          id: user._id,
-          email: user.email,
-          emailVerified: user.emailVerified,
+      sendSuccess(
+        res,
+        {
+          user: {
+            id: user._id,
+            email: user.email,
+            emailVerified: user.emailVerified,
+          },
+          token
         },
-        token
-      });
+        'Login successful'
+      );
     } catch (error) {
       logger.error('Login error:', error);
-      res.status(500).json({ error: 'Login failed' });
+      sendError(res, 'Login failed', 500);
     }
   }
 );
@@ -135,30 +141,32 @@ router.post('/link-anon',
       const anonId = getAnonId(req);
 
       if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return sendUnauthorized(res, 'Authentication required');
       }
 
       if (!anonId) {
-        return res.status(400).json({ error: 'No anonymous session found' });
+        return sendError(res, 'No anonymous session found', 400);
       }
 
       const linkResult = await linkAnonQuota(userId, anonId);
       
       if (linkResult.linked) {
         logger.info(`Linked ${linkResult.count} anonymous enhancements to user ${userId}`);
-        res.json({
-          message: 'Anonymous usage linked successfully',
-          linkedCount: linkResult.count
-        });
+        sendSuccess(
+          res,
+          { linkedCount: linkResult.count },
+          'Anonymous usage linked successfully'
+        );
       } else {
-        res.json({
-          message: 'No anonymous usage to link or already linked',
-          linkedCount: 0
-        });
+        sendSuccess(
+          res,
+          { linkedCount: 0 },
+          'No anonymous usage to link or already linked'
+        );
       }
     } catch (error) {
       logger.error('Link anon error:', error);
-      res.status(500).json({ error: 'Failed to link anonymous usage' });
+      sendError(res, 'Failed to link anonymous usage', 500);
     }
   }
 );

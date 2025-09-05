@@ -4,6 +4,7 @@ import { zodValidate, schemas } from '../middleware/zod';
 import { Session } from '../models/Session';
 import { Prompt } from '../models/Prompt';
 import { logger } from '../utils/logger';
+import { setAnonIdCookie } from '../middleware/anonId';
 
 const router = Router();
 
@@ -27,6 +28,11 @@ router.post('/',
         userId: userId || 'anonymous',
         title
       });
+
+      // Set anonymous ID cookie only if user is anonymous and this is their first usage
+      if (!userId && anonId && !req.cookies?.['pe_anon_id']) {
+        setAnonIdCookie(res, anonId);
+      }
 
       res.status(201).json({
         sessionId: session._id,

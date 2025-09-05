@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z, ZodSchema } from 'zod';
+import { sendValidationError, sendError } from '../utils/response';
 
 /**
  * Zod validation middleware
@@ -17,15 +18,12 @@ export function zodValidate(schema: ZodSchema, target: 'body' | 'query' | 'param
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({
-          error: 'Validation failed',
-          details: error.errors.map(err => ({
-            field: err.path.join('.'),
-            message: err.message
-          }))
-        });
+        sendValidationError(res, error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        })));
       } else {
-        res.status(500).json({ error: 'Validation error' });
+        sendError(res, 'Validation error', 500);
       }
     }
   };

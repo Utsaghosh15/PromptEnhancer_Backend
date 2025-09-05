@@ -13,7 +13,7 @@ export function initQueue(): Queue {
     return synopsisQueue;
   }
 
-  synopsisQueue = new Queue('synopsis:update', {
+  synopsisQueue = new Queue('synopsis-update', {
     connection: {
       host: new URL(env.REDIS_URL).hostname,
       port: parseInt(new URL(env.REDIS_URL).port) || 6379,

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { checkAnonQuota, checkUserQuota, checkIpQuota } from '../services/redis';
 import { getAnonId } from './anonId';
 import { logger } from '../utils/logger';
+import { sendError, sendRateLimit } from '../utils/response';
 
 /**
  * Rate limiting middleware for enhance endpoint
@@ -14,7 +15,7 @@ export async function limitEnhance(req: Request, res: Response, next: NextFuncti
     const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
     
     if (!anonId) {
-      res.status(500).json({ error: 'Anonymous ID not set' });
+      sendError(res, 'Anonymous ID not set', 500);
       return;
     }
 
@@ -22,11 +23,7 @@ export async function limitEnhance(req: Request, res: Response, next: NextFuncti
     const ipQuota = await checkIpQuota(clientIp, !!userId);
     if (!ipQuota.allowed) {
       logger.warn(`IP quota exceeded for ${clientIp}`);
-      res.status(429).json({
-        error: 'Rate limit exceeded',
-        message: 'Too many requests from this IP address',
-        retryAfter: 'tomorrow'
-      });
+      sendRateLimit(res, 'Too many requests from this IP address', 'tomorrow');
       return;
     }
 
@@ -36,11 +33,7 @@ export async function limitEnhance(req: Request, res: Response, next: NextFuncti
       const userQuota = await checkUserQuota(userId);
       if (!userQuota.allowed) {
         logger.warn(`User quota exceeded for ${userId}`);
-        res.status(429).json({
-          error: 'Daily quota exceeded',
-          message: 'You have reached your daily limit of 20 enhancements',
-          retryAfter: 'tomorrow'
-        });
+        sendRateLimit(res, 'You have reached your daily limit of 20 enhancements', 'tomorrow');
         return;
       }
       
@@ -52,11 +45,7 @@ export async function limitEnhance(req: Request, res: Response, next: NextFuncti
       const anonQuota = await checkAnonQuota(anonId);
       if (!anonQuota.allowed) {
         logger.warn(`Anonymous quota exceeded for ${anonId}`);
-        res.status(429).json({
-          error: 'Daily quota exceeded',
-          message: 'You have reached your daily limit of 10 enhancements. Sign up for more!',
-          retryAfter: 'tomorrow'
-        });
+        sendRateLimit(res, 'You have reached your daily limit of 10 enhancements. Sign up for more!', 'tomorrow');
         return;
       }
       
@@ -68,7 +57,7 @@ export async function limitEnhance(req: Request, res: Response, next: NextFuncti
     next();
   } catch (error) {
     logger.error('Rate limiting error:', error);
-    res.status(500).json({ error: 'Rate limiting failed' });
+    sendError(res, 'Rate limiting failed', 500);
   }
 }
 
